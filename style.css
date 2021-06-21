@@ -1,0 +1,64 @@
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+:root{
+    --tableSize: 600px;
+}
+
+body {
+    min-width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: wheat;
+}
+
+.chess-table {
+    background-color: teal;
+    width: var(--tableSize);
+    height: var(--tableSize);
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    border: 2px solid black;
+}
+
+.square {
+    box-sizing: border-box;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.white-table {
+    background-color: white;
+}
+
+.black-table {
+    background-color: rgb(122, 50, 50);
+}
+
+
+/* Estilo das peças do tabuleiro */
+.piece {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.spotlight {
+    background-color: blue;
+}
+
+
+img {
+    height: 65px;
+    width: 65px;
+    cursor: pointer;
+}
