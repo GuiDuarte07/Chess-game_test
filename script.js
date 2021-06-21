@@ -4,7 +4,10 @@ const numRegex = /\d/g;
 
 //Matriz que guarda todas as informações do jogo
 const gameSituation = [];
+//temporarily store obj situation of a position of gameSituation
 let tempGameSituation = [];
+//Store fields the king cannot enter
+let kingFields = [];
 
 //Verificar se o jogo continua;
 let isGameOver = false;
@@ -33,7 +36,7 @@ const initGameSituation = () => {
                 havePiece: false,
                 squareColor: undefined,
                 colorPiece: undefined,
-                typePiece: undefined
+                typePiece: undefined,
             }
         }
     }
@@ -168,7 +171,7 @@ const setDragStart = (event) => {
     attDragItem = event.target;
     attElementItem = attDragItem.parentNode;
 
-    getId(attDragItem.parentNode);
+    getId(attElementItem);
 
     if(gameSituation[idValue[0]][idValue[1]].colorPiece !== (isPlayerOne ? 'black' : 'white')) return;
 
@@ -408,6 +411,55 @@ const queenMove = (el) => {
     }
 }
 
+//Move of the knight
+const knightMove = (el) => {
+    let dist = 0;
+
+    allyPiece = isPlayerOne ? 'black' : 'white';
+    
+    getId(el.parentNode);
+    let x = idValue[0], y = idValue[1];
+
+    for (let i = x - 2; i <= x + 2; i++){
+        if (i === x) continue;
+        //Support to providing correct dist variable behavior
+        dist++;
+        if (dist > 2) dist--;
+        if (i === x + 2) dist = 1;
+
+        for (let j = y - dist; j <= y + dist; j++){
+            if (j != y - dist && j != y + dist) continue;
+            if (j < 0 || j > 7 || i < 0 || i > 7) continue;
+
+            if (gameSituation[i][j].colorPiece === allyPiece) continue;
+            squareDrop(i, j);
+        }
+    }
+}
+
+const resetKingFields = () => {
+    kingFields = [];
+
+    for (let i = 0; i < 8; i++){
+        kingFields[i] = []
+        for (let j = 0; j < 8; j++){
+            kingFields[i][j] = false;
+        }
+    }
+}
+
+const verifyKingFields = () => {
+    let enemyTurnColor = isPlayerOne ? 'white' : 'black';
+    resetKingFields();
+
+    for (let i = 0; i < 8; i++){
+        for (let j = 0; j < 8; j++){
+            if (gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyTurnColor){
+                executFunction[gameSituation[i][j].typePiece](event.target);
+            }
+        }
+    }
+}
 createTableSquare();
 
 
