@@ -170,10 +170,7 @@ const setDragStart = (event) => {
 
     getId(attDragItem.parentNode);
 
-    if(gameSituation[idValue[0]][idValue[1]].colorPiece !== (isPlayerOne ? 'black' : 'white')){
-        console.log('return')
-        return;
-    }
+    if(gameSituation[idValue[0]][idValue[1]].colorPiece !== (isPlayerOne ? 'black' : 'white')) return;
 
     tempGameSituation = gameSituation[idValue[0]][idValue[1]];
 
@@ -188,7 +185,6 @@ const setDragEnd = () => {
     removeSquareDrop();
     if (attDropItem && attDropItem.childNodes[0] === attDragItem) return;
     attElementItem.appendChild(attDragItem);
-    console.log('asd')
 }
 
 //Function for drop funcionality, will apend the piece in the drop element
@@ -265,33 +261,41 @@ const executFunction = {
     'queen'  : (el) => queenMove(el),
     'king'   : (el) => kingMove(el)
 }
+
+//Move of the pawn piece
 const pawnMove = (el) => {
     const initRow = (isPlayerOne)? 6 : 1;
     let op = (isPlayerOne)? -1 : +1;
     getId(el.parentNode);
+
+    //Take piece with pawn (on the front diagonal of the pawn)
     for (let j = idValue[1]-1; j <= idValue[1]+1; j++){
-        if (idValue[0]+op > 7 || idValue[0]+op < 0 || j < 0 || j > 7) continue;
+        if (idValue[0]+op > 7 || idValue[0]+op < 0 || j < 0 || j > 7) {
+            j++;
+            continue;
+        }
         if (gameSituation[idValue[0]+op][j].havePiece && gameSituation[idValue[0]+op][j].colorPiece !== gameSituation[idValue[0]][idValue[1]].colorPiece){
+            console.log(idValue[0] + op, j)
             squareDrop(idValue[0] + op, j);
         }
         j++;
     }
 
     if(idValue[0] === initRow){
-        for(let i = 1; i <= 2; i++){
+        for (let i = 1; i <= 2; i++){
             if(gameSituation[idValue[0] + op*i][idValue[1]].havePiece) break;
             squareDrop(idValue[0] + op*i, idValue[1]);
         }
         
     } else {
-        if(gameSituation[idValue[0]+op][idValue[1]].havePiece) return;
+        if (gameSituation[idValue[0]+op][idValue[1]].havePiece) return;
         squareDrop(idValue[0] + op, idValue[1]);
     }
 }
 
-//Move of the bishop
+//Move of the bishop piece
 const bishopMove = (el) => {
-    let dist = 1, maxSpot = 0, localeSpot = -1, continueSide = [], continueWhile = true;
+    let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
@@ -320,16 +324,89 @@ const bishopMove = (el) => {
                 }
 
                 if (continueSide[localeSpot%4]) squareDrop(i, j);
-                maxSpot++;
             }
         }
         dist++;
-        maxSpot++;
         if (dist >= 8) continueWhile = false;
-        if (maxSpot > 13) continueWhile = false;
     }
 }
 
+//Move of the rook piece
+const rookMove = (el) => {
+    let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
+
+    for (let i = 0; i < 4; i++) continueSide[i] = true;
+
+    allyPiece = isPlayerOne ? 'black' : 'white';
+    enemyPiece = isPlayerOne ? 'white' : 'black';
+    
+    getId(el.parentNode);
+    let x = idValue[0], y = idValue[1];
+
+    while(continueWhile){
+        for(let i = x - dist; i <= x + dist; i++){ 
+            if (i !== x - dist && i !== x + dist && i !== x) continue;
+            for(let j = y - dist; j <= y + dist; j++){
+                if (j !== y - dist && j !== y + dist && j !== y) continue;
+                if (j !== y && i !== x) continue;
+                if (j === y && i === x) continue;
+                localeSpot++;
+                if (i < 0 || i > 7) continue;
+                if (j < 0 || j > 7)continue;
+                
+                if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
+                    continueSide[localeSpot%4] = false;
+                    continue;
+                }else if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
+                    continueSide[localeSpot%4] = false;
+                    squareDrop(i, j);
+                }
+
+                if (continueSide[localeSpot%4]) squareDrop(i, j);
+            }
+        }
+        dist++;
+        if (dist >= 8) continueWhile = false;
+    }
+}
+
+//Move of the queen piece
+const queenMove = (el) => {
+    let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
+
+    for (let i = 0; i < 8; i++) continueSide[i] = true;
+
+    allyPiece = isPlayerOne ? 'black' : 'white';
+    enemyPiece = isPlayerOne ? 'white' : 'black';
+    
+    getId(el.parentNode);
+    let x = idValue[0], y = idValue[1];
+
+    while(continueWhile){
+        for(let i = x - dist; i <= x + dist; i++){ 
+            if (i !== x - dist && i !== x + dist && i !== x) continue;
+            for(let j = y - dist; j <= y + dist; j++){
+                if (j !== y - dist && j !== y + dist && j !== y) continue;
+                if (j === y && i === x) continue;
+                localeSpot++;
+                if (i < 0 || i > 7) continue;
+                if (j < 0 || j > 7)continue;
+                
+                if (continueSide[localeSpot%8] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
+                    continueSide[localeSpot%8] = false;
+                    continue;
+                }else if (continueSide[localeSpot%8] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
+                    continueSide[localeSpot%8] = false;
+                    squareDrop(i, j);
+                }
+
+                if (continueSide[localeSpot%8]) squareDrop(i, j);
+            }
+        }
+        dist++;
+        if (dist >= 8) continueWhile = false;
+    }
+}
 
 createTableSquare();
 
