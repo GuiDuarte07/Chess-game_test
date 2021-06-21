@@ -18,6 +18,9 @@ let isPlayerOne = true;
 //Guarda informação do id de um element
 let idValue = [];
 
+//Atived when a king under check situation
+let forceKingMovie = false;
+
 //Armazena o elemento que está no drag
 let attDragItem = undefined;
 let attDropItem = undefined;
@@ -173,11 +176,13 @@ const setDragStart = (event) => {
 
     getId(attElementItem);
 
-    if(gameSituation[idValue[0]][idValue[1]].colorPiece !== (isPlayerOne ? 'black' : 'white')) return;
+    let x = idValue[0], y = idValue[1];
 
-    tempGameSituation = gameSituation[idValue[0]][idValue[1]];
+    if(gameSituation[x][y].colorPiece !== (isPlayerOne ? 'black' : 'white')) return;
 
-    executFunction[gameSituation[idValue[0]][idValue[1]].typePiece](event.target);
+    tempGameSituation = gameSituation[x][y];
+
+    executFunction[gameSituation[x][y].typePiece](x, y, false);
 
     //It will create the effect of disappear in this piece
     setTimeout(() => attDragItem.remove(), 0);
@@ -202,8 +207,9 @@ const setDrop = (event) => {
 
     selectEl.appendChild(attDragItem);
     changeGameSituation(attElementItem, selectEl);
-
+    
     isPlayerOne = isPlayerOne? false: true;
+    verifyKingFields();
 }
 
 const setDragOver = (event) => {
@@ -255,58 +261,70 @@ const getId = (squareEl) => {
     });
 }
 
+
 /* ------------------------------------------FUNÇÕES DE MOVIMENTO DAS PEÇAS------------------------------------------- */
+
 const executFunction = {
-    'pawn'   : (el) => pawnMove(el),
-    'rook'   : (el) => rookMove(el),
-    'bishop' : (el) => bishopMove(el),
-    'knight' : (el) => knightMove(el),
-    'queen'  : (el) => queenMove(el),
-    'king'   : (el) => kingMove(el)
+    'pawn'   : (x, y, kingField) => pawnMove(x, y, kingField),
+    'rook'   : (x, y, kingField) => rookMove(x, y, kingField),
+    'bishop' : (x, y, kingField) => bishopMove(x, y, kingField),
+    'knight' : (x, y, kingField) => knightMove(x, y, kingField),
+    'queen'  : (x, y, kingField) => queenMove(x, y, kingField),
+    'king'   : (x, y, kingField) => kingMove(x, y, kingField)
 }
 
 //Move of the pawn piece
-const pawnMove = (el) => {
-    const initRow = (isPlayerOne)? 6 : 1;
-    let op = (isPlayerOne)? -1 : +1;
-    getId(el.parentNode);
+const pawnMove = (x, y, kingField) => {
+    if (!kingField && forceKingMovie) return;
+
+    const initRow = (kingField ? (isPlayerOne === true ? false : true) : isPlayerOne) ? 6 : 1;
+    let op = (kingField ? (isPlayerOne === true ? false : true) : isPlayerOne) ? -1 : +1;
 
     //Take piece with pawn (on the front diagonal of the pawn)
-    for (let j = idValue[1]-1; j <= idValue[1]+1; j++){
-        if (idValue[0]+op > 7 || idValue[0]+op < 0 || j < 0 || j > 7) {
+    for (let j = y-1; j <= y+1; j++){
+        if (x+op > 7 || x+op < 0 || j < 0 || j > 7) {
             j++;
             continue;
         }
-        if (gameSituation[idValue[0]+op][j].havePiece && gameSituation[idValue[0]+op][j].colorPiece !== gameSituation[idValue[0]][idValue[1]].colorPiece){
-            console.log(idValue[0] + op, j)
-            squareDrop(idValue[0] + op, j);
+        if(kingField){
+            kingFields[x + op][j] = true;
+            j++;
+            continue;
+        }
+        if (gameSituation[x+op][j].havePiece && gameSituation[x+op][j].colorPiece !== gameSituation[x][y].colorPiece){
+            squareDrop(x + op, j);
         }
         j++;
     }
 
-    if(idValue[0] === initRow){
+    if(kingField) return;
+
+    if(x === initRow){
         for (let i = 1; i <= 2; i++){
-            if(gameSituation[idValue[0] + op*i][idValue[1]].havePiece) break;
-            squareDrop(idValue[0] + op*i, idValue[1]);
+            if(gameSituation[x + op*i][y].havePiece) break;
+            squareDrop(x + op*i, y);
         }
         
     } else {
-        if (gameSituation[idValue[0]+op][idValue[1]].havePiece) return;
-        squareDrop(idValue[0] + op, idValue[1]);
+        if (gameSituation[x+op][y].havePiece) return;
+        squareDrop(x + op, y);
     }
 }
 
 //Move of the bishop piece
-const bishopMove = (el) => {
+const bishopMove = (x, y, kingField) => {
+    if (!kingField && forceKingMovie) return;
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
-    allyPiece = isPlayerOne ? 'black' : 'white';
-    enemyPiece = isPlayerOne ? 'white' : 'black';
-    
-    getId(el.parentNode);
-    let x = idValue[0], y = idValue[1];
+    if(kingField){
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
+    } else {
+        allyPiece = isPlayerOne ? 'black' : 'white';
+        enemyPiece = isPlayerOne ? 'white' : 'black';
+    }
 
     while(continueWhile){
         for(let i = x - dist; i <= x + dist; i++){
@@ -320,13 +338,21 @@ const bishopMove = (el) => {
 
                 if (gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
                     continueSide[localeSpot%4] = false;
+                    if (kingField) kingFields[i][j]= true;
                     continue;
                 }else if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
                     continueSide[localeSpot%4] = false;
-                    squareDrop(i, j);
+                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                    if (kingField && gameSituation[i][j].typePiece === 'king'){
+                        continueSide[localeSpot%8] = true;
+                    } else {
+                        continueSide[localeSpot%8] = false;
+                    }
                 }
 
-                if (continueSide[localeSpot%4]) squareDrop(i, j);
+                if (continueSide[localeSpot%4]) {
+                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                }
             }
         }
         dist++;
@@ -335,19 +361,22 @@ const bishopMove = (el) => {
 }
 
 //Move of the rook piece
-const rookMove = (el) => {
+const rookMove = (x, y, kingField) => {
+    if (!kingField && forceKingMovie) return;
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
-    allyPiece = isPlayerOne ? 'black' : 'white';
-    enemyPiece = isPlayerOne ? 'white' : 'black';
-    
-    getId(el.parentNode);
-    let x = idValue[0], y = idValue[1];
+    if(kingField){
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
+    } else {
+        allyPiece = isPlayerOne ? 'black' : 'white';
+        enemyPiece = isPlayerOne ? 'white' : 'black';
+    }
 
     while(continueWhile){
-        for(let i = x - dist; i <= x + dist; i++){ 
+        for(let i = x - dist; i <= x + dist; i++){
             if (i !== x - dist && i !== x + dist && i !== x) continue;
             for(let j = y - dist; j <= y + dist; j++){
                 if (j !== y - dist && j !== y + dist && j !== y) continue;
@@ -359,13 +388,19 @@ const rookMove = (el) => {
                 
                 if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
                     continueSide[localeSpot%4] = false;
+                    if (kingField) kingFields[i][j]= true;
                     continue;
                 }else if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
                     continueSide[localeSpot%4] = false;
-                    squareDrop(i, j);
+                    if (kingField && gameSituation[i][j].typePiece === 'king'){
+                        continueSide[localeSpot%8] = true;
+                    } else {
+                        continueSide[localeSpot%8] = false;
+                    }
+                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
                 }
 
-                if (continueSide[localeSpot%4]) squareDrop(i, j);
+                if (continueSide[localeSpot%4]) if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
             }
         }
         dist++;
@@ -374,16 +409,19 @@ const rookMove = (el) => {
 }
 
 //Move of the queen piece
-const queenMove = (el) => {
+const queenMove = (x, y, kingField) => {
+    if (!kingField && forceKingMovie) return;
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 8; i++) continueSide[i] = true;
 
-    allyPiece = isPlayerOne ? 'black' : 'white';
-    enemyPiece = isPlayerOne ? 'white' : 'black';
-    
-    getId(el.parentNode);
-    let x = idValue[0], y = idValue[1];
+    if(kingField){
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
+    } else {
+        allyPiece = isPlayerOne ? 'black' : 'white';
+        enemyPiece = isPlayerOne ? 'white' : 'black';
+    }
 
     while(continueWhile){
         for(let i = x - dist; i <= x + dist; i++){ 
@@ -397,13 +435,19 @@ const queenMove = (el) => {
                 
                 if (continueSide[localeSpot%8] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
                     continueSide[localeSpot%8] = false;
+                    if (kingField) kingFields[i][j]= true;
                     continue;
                 }else if (continueSide[localeSpot%8] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
-                    continueSide[localeSpot%8] = false;
-                    squareDrop(i, j);
+                    if (kingField && gameSituation[i][j].typePiece === 'king'){
+                        continueSide[localeSpot%8] = true;
+                    } else {
+                        continueSide[localeSpot%8] = false;
+                    }
+
+                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
                 }
 
-                if (continueSide[localeSpot%8]) squareDrop(i, j);
+                if (continueSide[localeSpot%8]) if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
             }
         }
         dist++;
@@ -412,13 +456,15 @@ const queenMove = (el) => {
 }
 
 //Move of the knight
-const knightMove = (el) => {
+const knightMove = (x, y, kingField) => {
+    if (!kingField && forceKingMovie) return;
     let dist = 0;
 
-    allyPiece = isPlayerOne ? 'black' : 'white';
-    
-    getId(el.parentNode);
-    let x = idValue[0], y = idValue[1];
+    if(kingField){
+        allyPiece = isPlayerOne ? 'white' : 'black';
+    } else {
+        allyPiece = isPlayerOne ? 'black' : 'white';
+    }
 
     for (let i = x - 2; i <= x + 2; i++){
         if (i === x) continue;
@@ -432,18 +478,63 @@ const knightMove = (el) => {
             if (j < 0 || j > 7 || i < 0 || i > 7) continue;
 
             if (gameSituation[i][j].colorPiece === allyPiece) continue;
-            squareDrop(i, j);
+            if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
         }
     }
 }
 
+//Move of the king piece
+const kingMove = (x, y, kingField) => {
+    if(kingField){
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
+    } else {
+        allyPiece = isPlayerOne ? 'black' : 'white';
+        enemyPiece = isPlayerOne ? 'white' : 'black';
+    }
+
+    for(let i = x - 1; i <= x + 1; i++){
+        for(let j = y - 1; j <= y + 1; j++){
+            if (i === x && j === y) continue;
+            if (i < 0 || i > 7) continue;
+            if (j < 0 || j > 7)continue;
+
+            if (gameSituation[i][j].colorPiece === allyPiece) continue;
+            if (kingField) kingFields[i][j] = true; else if (kingFields[i][j]) continue; else squareDrop(i, j);
+        }
+    }
+}
+
+
+/* --------------------------------VERIFY CHECKMATE AND POSSIBLES KING MOVE---------------------------------------------- */
+const verifyCheckMate = (x, y) => {
+    for(let i = x - 1; i <= x + 1; i++){
+        for(let j = y - 1; j <= y + 1; j++){
+            if (i === x && j === y) continue;
+            if (i < 0 || i > 7) continue;
+            if (j < 0 || j > 7)continue;
+
+            if (!gameSituation[i][j].havePiece && !kingFields[i][j]) {
+                console.log('is not checkmate!');
+                return;
+            }
+        }
+    }
+
+    isGameOver = true;
+    console.log('O JOGO ACABOU');
+}
 const resetKingFields = () => {
     kingFields = [];
+    forceKingMovie = false;
 
     for (let i = 0; i < 8; i++){
         kingFields[i] = []
         for (let j = 0; j < 8; j++){
-            kingFields[i][j] = false;
+            kingFields[i][j] = {
+                check: false,
+                piecesPoint = [] //Armazenar todas as peças que dão check nesse indice (armazenar x e y delas)!
+            }
         }
     }
 }
@@ -452,12 +543,23 @@ const verifyKingFields = () => {
     let enemyTurnColor = isPlayerOne ? 'white' : 'black';
     resetKingFields();
 
+    let x, y;
+
     for (let i = 0; i < 8; i++){
         for (let j = 0; j < 8; j++){
+            if (gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece != enemyTurnColor && gameSituation[i][j].typePiece === 'king') {
+                x = i;
+                y = j;
+            }
             if (gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyTurnColor){
-                executFunction[gameSituation[i][j].typePiece](event.target);
+                executFunction[gameSituation[i][j].typePiece](i, j, true);
             }
         }
+    }
+    console.log(kingFields)
+    if (kingFields[x][y]) {
+        forceKingMovie = true;
+        verifyCheckMate(x, y);
     }
 }
 createTableSquare();
@@ -471,3 +573,6 @@ createTableSquare();
     knight: cavalo
     pawn: peão ---> pode pular até 2 casas na primeira vez e só come peças pela lateral
 */
+
+//PERMITIR QUE O REI SAIA DO CHECK FAZENDO COM Q OUTRA PEÇA COMA A PEÇA QUE DEIXOU O REI EM CHECK
+//Talvez colocar o indice do elemento que está gerando o check emm cada posição do kingFields e nas peças verificar se uma delas pode comer ela
