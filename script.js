@@ -1,43 +1,47 @@
 const gameTable_section = document.querySelector('.chess-table');
-
 const numRegex = /\d/g;
 
-//Matriz que guarda todas as informações do jogo
-const gameSituation = [];
+//Matrix that stores all game information
+let gameSituation = [];
 //temporarily store obj situation of a position of gameSituation
 let tempGameSituation = [];
 //Store fields the king cannot enter
 let kingFields = [];
 
-//Verificar se o jogo continua;
+//Check if the game continues
 let isGameOver = false;
-
-//Informa de quem é a vez de jogar
+//Tell me whose turn it is
 let isPlayerOne = true;
 
-//Guarda informação do id de um element
+//Save element id information
 let idValue = [];
 
 //Atived when a king under check situation
 let forceKingMovie = false;
 
-//Armazena o elemento que está no drag
+//Stores the element that is in the drag
 let attDragItem = undefined;
 let attDropItem = undefined;
 let attElementItem = undefined;
 
+//Variables used to check if a move of a piece will revert check situation
+//Will store one play before of gameSituation and kingFields
+let checkPlay = false;
+let gameSituationSaveData = [];
+let kingFieldsSaveData = [];
+
 //Variável com todas os quadrados da mesa
 const allSquares = gameTable_section.childNodes;
 
-/* -----------------------------------------------Funcionalidades da mesa----------------------------------------------- */
-//Iniciar matriz do jogo
+/* -----------------------------------------------TABLE FEATURES----------------------------------------------- */
+//Start game matrix
 const initGameSituation = () => {
+    gameSituation = [];
     for(let i = 0; i < 8; i++){
         gameSituation[i] = []
         for(let j = 0; j < 8; j++){
             gameSituation[i][j] = {
                 havePiece: false,
-                squareColor: undefined,
                 colorPiece: undefined,
                 typePiece: undefined,
             }
@@ -45,14 +49,13 @@ const initGameSituation = () => {
     }
 }
 
-//Criar todas as casas do tabuleiro
+//Create all squares on the board
 const createTableSquare = () => {
     gameTable_section.innerHTML = '';
 
-    //Iniciar matriz do jogo
     initGameSituation();
 
-    //posição  em   x e y
+    //Position in x and y
     let squareId = [0, 0];
 
     for (let i = 0; i < 8; i++) {
@@ -65,12 +68,10 @@ const createTableSquare = () => {
                     square.classList.add('white-table');
                     square.setAttribute('id', `${squareId[0]}-${squareId[1]}`);
                     squareId[1] = (++squareId[1])%8;
-                    gameSituation[i][j].squareColor = 'white';
                 } else {
                     square.classList.add('black-table');
                     square.setAttribute('id', `${squareId[0]}-${squareId[1]}`);
                     squareId[1] = (++squareId[1])%8;
-                    gameSituation[i][j].squareColor = 'black';
                 }
                 gameTable_section.appendChild(square);
             }
@@ -83,12 +84,10 @@ const createTableSquare = () => {
                     square.classList.add('black-table');
                     square.setAttribute('id', `${squareId[0]}-${squareId[1]}`);
                     squareId[1] = (++squareId[1])%8;
-                    gameSituation[i][j].squareColor = 'black';
                 } else {
                     square.classList.add('white-table');
                     square.setAttribute('id', `${squareId[0]}-${squareId[1]}`);
                     squareId[1] = (++squareId[1])%8;
-                    gameSituation[i][j].squareColor = 'white';
                 }
                 gameTable_section.appendChild(square);
             }
@@ -99,56 +98,56 @@ const createTableSquare = () => {
     insertTablePieces();
 }
 
-//Criar as peças do tabuleiro
+//Create the board pieces
 const insertTablePieces = () => {
-    /*---------------------------------------   Criando as peças pretas!---------------------------------------  */
-        //Criando piões pretas
-        for(let i = 0; i < 8; i++){
-            insertImagePiece (1, i, 'pawn', 'white', 'plt');
-        }
-        //Criando torres pretas
-        insertImagePiece (0, 0, 'rook', 'white', 'rlt');
-        insertImagePiece (0, 7, 'rook', 'white', 'rlt');
-    
-        //Criando cavalos
-        insertImagePiece (0, 1, 'knight', 'white', 'nlt');
-        insertImagePiece (0, 6, 'knight', 'white', 'nlt');
-    
-        //Criando bispos
-        insertImagePiece (0, 2, 'bishop', 'white', 'blt');
-        insertImagePiece (0, 5, 'bishop', 'white', 'blt');
-    
-        //Criando rainha
-        insertImagePiece (0, 3, 'queen', 'white', 'qlt');
-    
-        //Criando rei
-        insertImagePiece (0, 4, 'king', 'white', 'klt');
-    
-    
-    /*---------------------------------------   Criando as peças pretas!---------------------------------------  */
-        //Criando piões pretas
-        for(let i = 0; i < 8; i++){
-            insertImagePiece (6, i, 'pawn', 'black', 'pdt');
-        }
-        //Criando torres pretas
-        insertImagePiece (7, 0, 'rook', 'black', 'rdt');
-        insertImagePiece (7, 7, 'rook', 'black', 'rdt');
-    
-        //Criando cavalos
-        insertImagePiece (7, 1, 'knight', 'black', 'ndt');
-        insertImagePiece (7, 6, 'knight', 'black', 'ndt');
-    
-        //Criando bispos
-        insertImagePiece (7, 2, 'bishop', 'black', 'bdt');
-        insertImagePiece (7, 5, 'bishop', 'black', 'bdt');
-    
-        //Criando rainha
-        insertImagePiece (7, 3, 'queen', 'black', 'qdt');
-    
-        //Criando rei
-        insertImagePiece (7, 4, 'king', 'black', 'kdt');
+    /*------------------------------------------Creating the black pieces!--------------------------------------------  */
+    //creating black pawns
+    for(let i = 0; i < 8; i++){
+        insertImagePiece (1, i, 'pawn', 'white', 'plt');
     }
+    //creating black towers
+    insertImagePiece (0, 0, 'rook', 'white', 'rlt');
+    insertImagePiece (0, 7, 'rook', 'white', 'rlt');
 
+    //Creating black knights
+    insertImagePiece (0, 1, 'knight', 'white', 'nlt');
+    insertImagePiece (0, 6, 'knight', 'white', 'nlt');
+
+    //Creating black bishops
+    insertImagePiece (0, 2, 'bishop', 'white', 'blt');
+    insertImagePiece (0, 5, 'bishop', 'white', 'blt');
+
+    //Creating black queen
+    insertImagePiece (0, 3, 'queen', 'white', 'qlt');
+
+    //Creating black king
+    insertImagePiece (0, 4, 'king', 'white', 'klt');
+    
+    /*------------------------------------------Creating the white pieces!--------------------------------------------  */
+    //creating white towers
+    for(let i = 0; i < 8; i++){
+        insertImagePiece (6, i, 'pawn', 'black', 'pdt');
+    }
+    //creating white towers
+    insertImagePiece (7, 0, 'rook', 'black', 'rdt');
+    insertImagePiece (7, 7, 'rook', 'black', 'rdt');
+
+    //Creating white knights
+    insertImagePiece (7, 1, 'knight', 'black', 'ndt');
+    insertImagePiece (7, 6, 'knight', 'black', 'ndt');
+
+    ///Creating white bishops
+    insertImagePiece (7, 2, 'bishop', 'black', 'bdt');
+    insertImagePiece (7, 5, 'bishop', 'black', 'bdt');
+
+    //Creating white queen
+    insertImagePiece (7, 3, 'queen', 'black', 'qdt');
+
+    //Creating white king
+    insertImagePiece (7, 4, 'king', 'black', 'kdt');
+}
+
+//Insert image and info that a certain piece type
 const insertImagePiece = (i, j, pieceName, colorPiece, svgName) => {
     
     anySquare = document.getElementById(`${i}-${j}`);
@@ -162,7 +161,8 @@ const insertImagePiece = (i, j, pieceName, colorPiece, svgName) => {
     anySquare.appendChild(piece_img);
 }
 
-/* --------------------------------------------Funções do drag and drop--------------------------------------------*/
+/* --------------------------------------------DRAG AND DROP FUNCTIONS!--------------------------------------------*/
+//Add drag-and-drop functions to a piece
 const insertDragAndDrop = (element) => {
     element.draggable = true;
     element.setAttribute('ondragstart', 'setDragStart(event)');
@@ -180,8 +180,7 @@ const setDragStart = (event) => {
 
     if(gameSituation[x][y].colorPiece !== (isPlayerOne ? 'black' : 'white')) return;
 
-    tempGameSituation = gameSituation[x][y];
-
+    saveTempGameSituation(false, x, y);
     executFunction[gameSituation[x][y].typePiece](x, y, false);
 
     //It will create the effect of disappear in this piece
@@ -212,6 +211,7 @@ const setDrop = (event) => {
     verifyKingFields();
 }
 
+//Get and save the element that a drag is over
 const setDragOver = (event) => {
     event.preventDefault();
     //It will check if the piece being dragged was dropped on the same element as we have in this variable
@@ -221,14 +221,7 @@ const setDragOver = (event) => {
     }
 }
 
-const squareDrop = (x, y) => {
-    const element = document.getElementById(`${x}-${y}`);
-    element.classList.add('spotlight');
-    element.setAttribute('ondrop', 'setDrop(event)');
-    element.setAttribute('ondragover', 'setDragOver(event)');
-}
-
-
+//When drag end, remove drag funtionality from all pieces
 const removeSquareDrop = () => {
     allSquares.forEach(square => {
         if(square.classList.contains('spotlight')){
@@ -239,18 +232,25 @@ const removeSquareDrop = () => {
     });
 }
 
-const changeGameSituation = (prevEl, afterEl) => {  
+/* --------------------------------------UTILITY FUNCTIONS!-------------------------------------------------- */
+
+//Will show the position a piece can go
+const squareDrop = (x, y) => {
+    const element = document.getElementById(`${x}-${y}`);
+    element.classList.add('spotlight');
+    element.setAttribute('ondrop', 'setDrop(event)');
+    element.setAttribute('ondragover', 'setDragOver(event)');
+}
+
+//Will make the play and save it in gameSituation matrix
+const changeGameSituation = (prevEl, afterEl) => {
     getId(afterEl);
-    gameSituation[idValue[0]][idValue[1]].havePiece = tempGameSituation.havePiece;
-    gameSituation[idValue[0]][idValue[1]].colorPiece = tempGameSituation.colorPiece;
-    gameSituation[idValue[0]][idValue[1]].typePiece = tempGameSituation.typePiece;
-    tempGameSituation = [];
+    saveTempGameSituation(true, idValue[0], idValue[1]);
     
     getId(prevEl);
     gameSituation[idValue[0]][idValue[1]].havePiece = false;
     gameSituation[idValue[0]][idValue[1]].colorPiece = undefined;
     gameSituation[idValue[0]][idValue[1]].typePiece = undefined;
-    console.log(gameSituation)
 }
 
 //Get the row and column from a id
@@ -261,6 +261,65 @@ const getId = (squareEl) => {
     });
 }
 
+//get the new position of a piece saved in tempGameSituation or save this piece in it
+const saveTempGameSituation = (recover, x, y) => {
+    if (recover) {
+        gameSituation[x][y].havePiece = tempGameSituation.havePiece;
+        gameSituation[x][y].colorPiece = tempGameSituation.colorPiece;
+        gameSituation[x][y].typePiece = tempGameSituation.typePiece;
+        return;
+    }
+
+    tempGameSituation = {
+        havePiece: false,
+        colorPiece: undefined,
+        typePiece: undefined,
+    }
+    tempGameSituation.havePiece = gameSituation[x][y].havePiece;
+    tempGameSituation.colorPiece = gameSituation[x][y].colorPiece;
+    tempGameSituation.typePiece = gameSituation[x][y].typePiece;
+}
+
+//Return the gameSituation and kingFields to the beginning with save datas
+const goBackOnePlay = () => {
+    checkPlay = false;
+    kingFields = [...kingFieldsSaveData];
+    initGameSituation();
+
+    for (let m = 0; m < 8; m++){
+        for (let n = 0; n < 8; n++) {
+            gameSituation[m][n].havePiece = gameSituationSaveData[m][n].havePiece;
+            gameSituation[m][n].colorPiece = gameSituationSaveData[m][n].colorPiece;
+            gameSituation[m][n].typePiece = gameSituationSaveData[m][n].typePiece;
+        }
+    }
+}
+
+//Responsible for checking whether a move will remove the king's check
+const verifyPlayCheck = (x, y, i, j) => {
+    checkPlay = true;
+    //gameSituationSaveData store the gameSituation matrix before play in analysis
+    gameSituationSaveData = [];
+
+    for (let m = 0; m < 8; m++){
+        gameSituationSaveData[m] = []
+        for (let n = 0; n < 8; n++) {
+            gameSituationSaveData[m][n] = {
+                havePiece: false,
+                colorPiece: undefined,
+                typePiece: undefined,
+            }
+            gameSituationSaveData[m][n].havePiece = gameSituation[m][n].havePiece;
+            gameSituationSaveData[m][n].colorPiece = gameSituation[m][n].colorPiece;
+            gameSituationSaveData[m][n].typePiece = gameSituation[m][n].typePiece;
+        }
+    }
+    //Same thing with kingFieldsSaveData
+    kingFieldsSaveData = [...kingFields];
+    changeGameSituation(document.getElementById(`${x}-${y}`), document.getElementById(`${i}-${j}`));
+    //This will make the new matrix that will reveal whether it was sucessful or not
+    verifyKingFields();
+}
 
 /* ------------------------------------------FUNÇÕES DE MOVIMENTO DAS PEÇAS------------------------------------------- */
 
@@ -275,11 +334,9 @@ const executFunction = {
 
 //Move of the pawn piece
 const pawnMove = (x, y, kingField) => {
-    if (!kingField && forceKingMovie) return;
-
     const initRow = (kingField ? (isPlayerOne === true ? false : true) : isPlayerOne) ? 6 : 1;
     let op = (kingField ? (isPlayerOne === true ? false : true) : isPlayerOne) ? -1 : +1;
-
+    
     //Take piece with pawn (on the front diagonal of the pawn)
     for (let j = y-1; j <= y+1; j++){
         if (x+op > 7 || x+op < 0 || j < 0 || j > 7) {
@@ -292,6 +349,17 @@ const pawnMove = (x, y, kingField) => {
             continue;
         }
         if (gameSituation[x+op][j].havePiece && gameSituation[x+op][j].colorPiece !== gameSituation[x][y].colorPiece){
+            if (!kingField && forceKingMovie && !checkPlay) {
+                //Verify if put this piece in this position will resolve check situation
+                verifyPlayCheck(x, y, x + op, j);
+
+                if (!forceKingMovie) {
+                    forceKingMovie = true;
+                    squareDrop(x + op, j);
+                }
+                goBackOnePlay();
+                continue;
+            }
             squareDrop(x + op, j);
         }
         j++;
@@ -302,18 +370,38 @@ const pawnMove = (x, y, kingField) => {
     if(x === initRow){
         for (let i = 1; i <= 2; i++){
             if(gameSituation[x + op*i][y].havePiece) break;
+
+            if (forceKingMovie && !checkPlay) {
+                //Verify if put this piece in this position will resolve check situation
+                verifyPlayCheck(x, y, x + op*i, y);
+                if (!forceKingMovie) {
+                    forceKingMovie = true;
+                    squareDrop(x + op*i, y);
+                }
+                goBackOnePlay();
+                continue;
+            }
+
             squareDrop(x + op*i, y);
         }
-        
     } else {
         if (gameSituation[x+op][y].havePiece) return;
+        if (forceKingMovie && !checkPlay) {
+            //Verify if put this piece in this position will resolve check situation
+            verifyPlayCheck(x, y, x + op, y);
+            if (!forceKingMovie) {
+                forceKingMovie = true;
+                squareDrop(x + op, y);
+            }
+            goBackOnePlay();
+            return;
+        }
         squareDrop(x + op, y);
     }
 }
 
 //Move of the bishop piece
 const bishopMove = (x, y, kingField) => {
-    if (!kingField && forceKingMovie) return;
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
@@ -342,6 +430,19 @@ const bishopMove = (x, y, kingField) => {
                     continue;
                 }else if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
                     continueSide[localeSpot%4] = false;
+
+                    if (!kingField && forceKingMovie && !checkPlay) {
+                        //Verify if put this piece in this position will resolve check situation
+                        verifyPlayCheck(x, y, i, j);
+        
+                        if (!forceKingMovie) {
+                            forceKingMovie = true;
+                            squareDrop(i, j);
+                        }
+                        goBackOnePlay();
+                        continue;
+                    }
+
                     if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
                     if (kingField && gameSituation[i][j].typePiece === 'king'){
                         continueSide[localeSpot%8] = true;
@@ -351,6 +452,18 @@ const bishopMove = (x, y, kingField) => {
                 }
 
                 if (continueSide[localeSpot%4]) {
+                    if (!kingField && forceKingMovie && !checkPlay) {
+                        //Verify if put this piece in this position will resolve check situation
+                        verifyPlayCheck(x, y, i, j);
+        
+                        if (!forceKingMovie) {
+                            forceKingMovie = true;
+                            squareDrop(i, j);
+                        }
+                        goBackOnePlay();
+                        continue;
+                    }
+
                     if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
                 }
             }
@@ -362,7 +475,6 @@ const bishopMove = (x, y, kingField) => {
 
 //Move of the rook piece
 const rookMove = (x, y, kingField) => {
-    if (!kingField && forceKingMovie) return;
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
@@ -397,9 +509,32 @@ const rookMove = (x, y, kingField) => {
                     } else {
                         continueSide[localeSpot%8] = false;
                     }
+                    if (!kingField && forceKingMovie && !checkPlay) {
+                        //Verify if put this piece in this position will resolve check situation
+                        verifyPlayCheck(x, y, i, j);
+        
+                        if (!forceKingMovie) {
+                            forceKingMovie = true;
+                            squareDrop(i, j);
+                        }
+                        goBackOnePlay();
+                        continue;
+                    }
                     if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
                 }
 
+                if (!kingField && forceKingMovie && !checkPlay) {
+                    //Verify if put this piece in this position will resolve check situation
+                    verifyPlayCheck(x, y, i, j);
+    
+                    if (!forceKingMovie) {
+                        forceKingMovie = true;
+                        squareDrop(i, j);
+                    }
+                    goBackOnePlay();
+                    continue;
+                }
+                
                 if (continueSide[localeSpot%4]) if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
             }
         }
@@ -410,7 +545,6 @@ const rookMove = (x, y, kingField) => {
 
 //Move of the queen piece
 const queenMove = (x, y, kingField) => {
-    if (!kingField && forceKingMovie) return;
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
 
     for (let i = 0; i < 8; i++) continueSide[i] = true;
@@ -422,6 +556,7 @@ const queenMove = (x, y, kingField) => {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
     }
+    /* console.log(gameSituation); */
 
     while(continueWhile){
         for(let i = x - dist; i <= x + dist; i++){ 
@@ -444,10 +579,34 @@ const queenMove = (x, y, kingField) => {
                         continueSide[localeSpot%8] = false;
                     }
 
+                    if (!kingField && forceKingMovie && !checkPlay) {
+                        //Verify if put this piece in this position will resolve check situation
+                        verifyPlayCheck(x, y, i, j);
+        
+                        if (!forceKingMovie) {
+                            forceKingMovie = true;
+                            squareDrop(i, j);
+                        }
+                        goBackOnePlay();
+                        continue;
+                    }
+
                     if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
                 }
 
-                if (continueSide[localeSpot%8]) if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                if (continueSide[localeSpot%8]) {
+                    if (!kingField && forceKingMovie && !checkPlay) {
+                        //Verify if put this piece in this position will resolve check situation
+                        verifyPlayCheck(x, y, i, j);
+                        if (!forceKingMovie) {
+                            forceKingMovie = true;
+                            squareDrop(i, j);
+                        }
+                        goBackOnePlay();
+                        continue;
+                    }
+                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                }
             }
         }
         dist++;
@@ -457,7 +616,6 @@ const queenMove = (x, y, kingField) => {
 
 //Move of the knight
 const knightMove = (x, y, kingField) => {
-    if (!kingField && forceKingMovie) return;
     let dist = 0;
 
     if(kingField){
@@ -478,6 +636,19 @@ const knightMove = (x, y, kingField) => {
             if (j < 0 || j > 7 || i < 0 || i > 7) continue;
 
             if (gameSituation[i][j].colorPiece === allyPiece) continue;
+
+            if (!kingField && forceKingMovie && !checkPlay) {
+                //Verify if put this piece in this position will resolve check situation
+                verifyPlayCheck(x, y, x + op, j);
+
+                if (!forceKingMovie) {
+                    forceKingMovie = true;
+                    squareDrop(x + op, j);
+                }
+                goBackOnePlay();
+                continue;
+            }
+
             if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
         }
     }
@@ -524,21 +695,8 @@ const verifyCheckMate = (x, y) => {
     isGameOver = true;
     console.log('O JOGO ACABOU');
 }
-const resetKingFields = () => {
-    kingFields = [];
-    forceKingMovie = false;
 
-    for (let i = 0; i < 8; i++){
-        kingFields[i] = []
-        for (let j = 0; j < 8; j++){
-            kingFields[i][j] = {
-                check: false,
-                piecesPoint = [] //Armazenar todas as peças que dão check nesse indice (armazenar x e y delas)!
-            }
-        }
-    }
-}
-
+//This function will populate the kingFields matrix with info about which position the king cannot enter
 const verifyKingFields = () => {
     let enemyTurnColor = isPlayerOne ? 'white' : 'black';
     resetKingFields();
@@ -556,12 +714,14 @@ const verifyKingFields = () => {
             }
         }
     }
-    console.log(kingFields)
     if (kingFields[x][y]) {
         forceKingMovie = true;
         verifyCheckMate(x, y);
     }
 }
+
+
+//Init Game
 createTableSquare();
 
 
@@ -573,6 +733,4 @@ createTableSquare();
     knight: cavalo
     pawn: peão ---> pode pular até 2 casas na primeira vez e só come peças pela lateral
 */
-
-//PERMITIR QUE O REI SAIA DO CHECK FAZENDO COM Q OUTRA PEÇA COMA A PEÇA QUE DEIXOU O REI EM CHECK
-//Talvez colocar o indice do elemento que está gerando o check emm cada posição do kingFields e nas peças verificar se uma delas pode comer ela
+//AINDA EXISTE O BUG DE PODER FAZER UMA JOGADA QUE DEIXA O REI EM CHECK E O INIMIGO PODE COMER O REI
