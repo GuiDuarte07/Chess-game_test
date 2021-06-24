@@ -30,10 +30,13 @@ let checkPlay = false;
 let gameSituationSaveData = [];
 let kingFieldsSaveData = [];
 
+//Not to allow entering the dragEnd function when pawn promotion
+let isPawnPromotion = false;
+
 //Variável com todas os quadrados da mesa
 const allSquares = gameTable_section.childNodes;
 
-/* -----------------------------------------------TABLE FEATURES----------------------------------------------- */
+/* -----------------------------------------------------TABLE FEATURES----------------------------------------------------- */
 //Start game matrix
 const initGameSituation = () => {
     gameSituation = [];
@@ -100,7 +103,7 @@ const createTableSquare = () => {
 
 //Create the board pieces
 const insertTablePieces = () => {
-    /*------------------------------------------Creating the black pieces!--------------------------------------------  */
+    /*---------------------------------------------Creating the black pieces!-----------------------------------------------*/
     //creating black pawns
     for(let i = 0; i < 8; i++){
         insertImagePiece (1, i, 'pawn', 'white', 'plt');
@@ -123,7 +126,7 @@ const insertTablePieces = () => {
     //Creating black king
     insertImagePiece (0, 4, 'king', 'white', 'klt');
     
-    /*------------------------------------------Creating the white pieces!--------------------------------------------  */
+    /*---------------------------------------------Creating the white pieces!-----------------------------------------------*/
     //creating white towers
     for(let i = 0; i < 8; i++){
         insertImagePiece (6, i, 'pawn', 'black', 'pdt');
@@ -161,7 +164,7 @@ const insertImagePiece = (i, j, pieceName, colorPiece, svgName) => {
     anySquare.appendChild(piece_img);
 }
 
-/* --------------------------------------------DRAG AND DROP FUNCTIONS!--------------------------------------------*/
+/* ----------------------------------------------DRAG AND DROP FUNCTIONS!---------------------------------------------------*/
 //Add drag-and-drop functions to a piece
 const insertDragAndDrop = (element) => {
     element.draggable = true;
@@ -171,6 +174,8 @@ const insertDragAndDrop = (element) => {
 
 //Function for drag start!
 const setDragStart = (event) => {
+    if(isGameOver) return;
+
     attDragItem = event.target;
     attElementItem = attDragItem.parentNode;
 
@@ -190,6 +195,10 @@ const setDragStart = (event) => {
 //Function for drag end, will check if was all okay
 const setDragEnd = () => {
     removeSquareDrop();
+    if (isPawnPromotion) {
+        isPawnPromotion = false;
+        return;
+    }
     if (attDropItem && attDropItem.childNodes[0] === attDragItem) return;
     attElementItem.appendChild(attDragItem);
 }
@@ -209,6 +218,7 @@ const setDrop = (event) => {
     
     isPlayerOne = isPlayerOne? false: true;
     verifyKingFields();
+    /* console.log(gameSituation) */
 }
 
 //Get and save the element that a drag is over
@@ -232,7 +242,7 @@ const removeSquareDrop = () => {
     });
 }
 
-/* --------------------------------------UTILITY FUNCTIONS!-------------------------------------------------- */
+/* --------------------------------------------UTILITY FUNCTIONS!---------------------------------------------------------- */
 
 //Will show the position a piece can go
 const squareDrop = (x, y) => {
@@ -240,6 +250,19 @@ const squareDrop = (x, y) => {
     element.classList.add('spotlight');
     element.setAttribute('ondrop', 'setDrop(event)');
     element.setAttribute('ondragover', 'setDragOver(event)');
+}
+
+//Aply pawn promotion to queen
+const changeImgToQueen = (x, y, color) => {
+    gameSituation[x][y].typePiece = 'queen';
+    const svgName = (color === 'white') ? 'qlt' : 'qdt';
+    const pawnPiece = document.getElementById(`${x}-${y}`);
+
+    const piece_img = document.createElement('img');
+    piece_img.src = `./svg_pieces/Chess_${svgName}45.svg`;
+    insertDragAndDrop(piece_img);
+    pawnPiece.childNodes[0].remove();
+    pawnPiece.appendChild(piece_img);
 }
 
 //Will make the play and save it in gameSituation matrix
@@ -251,6 +274,7 @@ const changeGameSituation = (prevEl, afterEl) => {
     gameSituation[idValue[0]][idValue[1]].havePiece = false;
     gameSituation[idValue[0]][idValue[1]].colorPiece = undefined;
     gameSituation[idValue[0]][idValue[1]].typePiece = undefined;
+    console.log(gameSituation)
 }
 
 //Get the row and column from a id
@@ -261,12 +285,22 @@ const getId = (squareEl) => {
     });
 }
 
+
 //get the new position of a piece saved in tempGameSituation or save this piece in it
 const saveTempGameSituation = (recover, x, y) => {
     if (recover) {
         gameSituation[x][y].havePiece = tempGameSituation.havePiece;
         gameSituation[x][y].colorPiece = tempGameSituation.colorPiece;
         gameSituation[x][y].typePiece = tempGameSituation.typePiece;
+        //Verify queen promotion (when pawn play)
+    if (gameSituation[x][y].typePiece === 'pawn'){
+        let queenPromotion = gameSituation[x][y].colorPiece === 'black' ? 0 : 7;
+        console.log(queenPromotion)
+        if (x === queenPromotion){/* !check &&  */
+            changeImgToQueen(x, y, gameSituation[x][y].colorPiece);
+            isPawnPromotion = true;
+        }
+    }
         return;
     }
 
@@ -321,7 +355,20 @@ const verifyPlayCheck = (x, y, i, j) => {
     verifyKingFields();
 }
 
-/* ------------------------------------------FUNÇÕES DE MOVIMENTO DAS PEÇAS------------------------------------------- */
+//Reset kingFields matrix
+const resetKingFields = () => {
+    kingFields = [];
+    forceKingMovie = false;
+
+    for (let i = 0; i < 8; i++){
+        kingFields[i] = []
+        for (let j = 0; j < 8; j++){
+            kingFields[i][j] = false;
+        }
+    }
+}
+
+/* ----------------------------------------------PIECES MOVEMENT FUNCTIONS!------------------------------------------------ */
 
 const executFunction = {
     'pawn'   : (x, y, kingField) => pawnMove(x, y, kingField),
@@ -358,6 +405,7 @@ const pawnMove = (x, y, kingField) => {
                     squareDrop(x + op, j);
                 }
                 goBackOnePlay();
+                j++;
                 continue;
             }
             squareDrop(x + op, j);
@@ -365,7 +413,7 @@ const pawnMove = (x, y, kingField) => {
         j++;
     }
 
-    if(kingField) return;
+    if (kingField) return;
 
     if(x === initRow){
         for (let i = 1; i <= 2; i++){
@@ -381,7 +429,6 @@ const pawnMove = (x, y, kingField) => {
                 goBackOnePlay();
                 continue;
             }
-
             squareDrop(x + op*i, y);
         }
     } else {
@@ -403,6 +450,7 @@ const pawnMove = (x, y, kingField) => {
 //Move of the bishop piece
 const bishopMove = (x, y, kingField) => {
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
+    let allyPiece, enemyPiece;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
@@ -476,6 +524,7 @@ const bishopMove = (x, y, kingField) => {
 //Move of the rook piece
 const rookMove = (x, y, kingField) => {
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
+    let allyPiece, enemyPiece;
 
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
@@ -546,6 +595,7 @@ const rookMove = (x, y, kingField) => {
 //Move of the queen piece
 const queenMove = (x, y, kingField) => {
     let dist = 1, localeSpot = -1, continueSide = [], continueWhile = true;
+    let allyPiece, enemyPiece;
 
     for (let i = 0; i < 8; i++) continueSide[i] = true;
 
@@ -556,8 +606,6 @@ const queenMove = (x, y, kingField) => {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
     }
-    /* console.log(gameSituation); */
-
     while(continueWhile){
         for(let i = x - dist; i <= x + dist; i++){ 
             if (i !== x - dist && i !== x + dist && i !== x) continue;
@@ -617,6 +665,7 @@ const queenMove = (x, y, kingField) => {
 //Move of the knight
 const knightMove = (x, y, kingField) => {
     let dist = 0;
+    let allyPiece;
 
     if(kingField){
         allyPiece = isPlayerOne ? 'white' : 'black';
@@ -639,11 +688,11 @@ const knightMove = (x, y, kingField) => {
 
             if (!kingField && forceKingMovie && !checkPlay) {
                 //Verify if put this piece in this position will resolve check situation
-                verifyPlayCheck(x, y, x + op, j);
+                verifyPlayCheck(x, y, i, j);
 
                 if (!forceKingMovie) {
                     forceKingMovie = true;
-                    squareDrop(x + op, j);
+                    squareDrop(i, j);
                 }
                 goBackOnePlay();
                 continue;
@@ -656,6 +705,8 @@ const knightMove = (x, y, kingField) => {
 
 //Move of the king piece
 const kingMove = (x, y, kingField) => {
+    let allyPiece;
+
     if(kingField){
         allyPiece = isPlayerOne ? 'white' : 'black';
         enemyPiece = isPlayerOne ? 'black' : 'white';
@@ -671,7 +722,20 @@ const kingMove = (x, y, kingField) => {
             if (j < 0 || j > 7)continue;
 
             if (gameSituation[i][j].colorPiece === allyPiece) continue;
-            if (kingField) kingFields[i][j] = true; else if (kingFields[i][j]) continue; else squareDrop(i, j);
+            if (kingField) kingFields[i][j] = true; else{
+                if (!kingField && forceKingMovie && !checkPlay) {
+                    //Verify if put this piece in this position will resolve check situation
+                    verifyPlayCheck(x, y, i, j);
+    
+                    if (!forceKingMovie) {
+                        forceKingMovie = true;
+                        squareDrop(i, j);
+                    }
+                    goBackOnePlay();
+                    continue;
+                }
+                if (kingFields[i][j]) continue; else squareDrop(i, j);
+            } 
         }
     }
 }
@@ -679,6 +743,7 @@ const kingMove = (x, y, kingField) => {
 
 /* --------------------------------VERIFY CHECKMATE AND POSSIBLES KING MOVE---------------------------------------------- */
 const verifyCheckMate = (x, y) => {
+    console.log(x, y);
     for(let i = x - 1; i <= x + 1; i++){
         for(let j = y - 1; j <= y + 1; j++){
             if (i === x && j === y) continue;
@@ -693,7 +758,7 @@ const verifyCheckMate = (x, y) => {
     }
 
     isGameOver = true;
-    console.log('O JOGO ACABOU');
+    alert(`${isPlayerOne ? "white" : "black"} wins!`);
 }
 
 //This function will populate the kingFields matrix with info about which position the king cannot enter
@@ -733,4 +798,5 @@ createTableSquare();
     knight: cavalo
     pawn: peão ---> pode pular até 2 casas na primeira vez e só come peças pela lateral
 */
-//AINDA EXISTE O BUG DE PODER FAZER UMA JOGADA QUE DEIXA O REI EM CHECK E O INIMIGO PODE COMER O REI
+
+//ALGUM BUG COM A TORRE FEZ O GAMESITUATION TROCAR A PEÇA DO REI PELA PEÇA DA TORRE FAZENDO O REI SE COMPORTAR COMO REI
