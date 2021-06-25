@@ -33,6 +33,8 @@ let kingFieldsSaveData = [];
 //Not to allow entering the dragEnd function when pawn promotion
 let isPawnPromotion = false;
 
+let wasRookOrKing = false;
+
 //Variável com todas os quadrados da mesa
 const allSquares = gameTable_section.childNodes;
 
@@ -157,6 +159,9 @@ const insertImagePiece = (i, j, pieceName, colorPiece, svgName) => {
     gameSituation[i][j].typePiece = pieceName;
     gameSituation[i][j].colorPiece = colorPiece;
     gameSituation[i][j].havePiece = true;
+    if (pieceName === 'rook' || pieceName === 'king'){
+        gameSituation[i][j].hasMoved = false;
+    }
 
     const piece_img = document.createElement('img');
     piece_img.src = `./svg_pieces/Chess_${svgName}45.svg`;
@@ -214,7 +219,12 @@ const setDrop = (event) => {
     if (selectEl.childNodes[0]) selectEl.childNodes[0].remove();
 
     selectEl.appendChild(attDragItem);
-    changeGameSituation(attElementItem, selectEl);
+
+    if (selectEl.classList.contains('castle')){
+        changeGameSituation(attElementItem, selectEl, true);
+    } else {
+        changeGameSituation(attElementItem, selectEl);
+    }
     
     isPlayerOne = isPlayerOne? false: true;
     verifyKingFields();
@@ -245,11 +255,14 @@ const removeSquareDrop = () => {
 /* --------------------------------------------UTILITY FUNCTIONS!---------------------------------------------------------- */
 
 //Will show the position a piece can go
-const squareDrop = (x, y) => {
+const squareDrop = (x, y, castle) => {
     const element = document.getElementById(`${x}-${y}`);
     element.classList.add('spotlight');
     element.setAttribute('ondrop', 'setDrop(event)');
     element.setAttribute('ondragover', 'setDragOver(event)');
+    if (castle) {
+        element.classList.add('castle');
+    }
 }
 
 //Aply pawn promotion to queen
@@ -266,14 +279,37 @@ const changeImgToQueen = (x, y, color) => {
 }
 
 //Will make the play and save it in gameSituation matrix
-const changeGameSituation = (prevEl, afterEl) => {
+const changeGameSituation = (prevEl, afterEl, castle) => {
     getId(afterEl);
     saveTempGameSituation(true, idValue[0], idValue[1]);
+
+    if (castle) {
+        let x = idValue[0];
+        let y = idValue[1];
+        let prY = y === 6 ? 7 : 0; //prevRookY
+        let arY = prY === 7 ? 5 : 3; //afterRookY
+        
+        gameSituation[x][arY].havePiece = true;
+        gameSituation[x][arY].colorPiece = gameSituation[x][prY].colorPiece;
+        gameSituation[x][arY].typePiece = 'rook'
+        gameSituation[x][arY].hasMoved = true;
+
+        gameSituation[x][prY].havePiece = false;
+        gameSituation[x][prY].colorPiece = undefined;
+        gameSituation[x][prY].typePiece = undefined;
+        delete gameSituation[x][prY].hasMoved;
+
+        let rook_img = document.getElementById(`${x}-${prY}`).childNodes[0];
+        rook_img.remove();
+
+        document.getElementById(`${x}-${arY}`).appendChild(rook_img);
+    }
     
     getId(prevEl);
     gameSituation[idValue[0]][idValue[1]].havePiece = false;
     gameSituation[idValue[0]][idValue[1]].colorPiece = undefined;
     gameSituation[idValue[0]][idValue[1]].typePiece = undefined;
+    delete gameSituation[idValue[0]][idValue[1]].hasMoved;
     console.log(gameSituation)
 }
 
@@ -292,6 +328,10 @@ const saveTempGameSituation = (recover, x, y) => {
         gameSituation[x][y].havePiece = tempGameSituation.havePiece;
         gameSituation[x][y].colorPiece = tempGameSituation.colorPiece;
         gameSituation[x][y].typePiece = tempGameSituation.typePiece;
+        //When rook or king play (useful for castling funcion)
+        if('hasMoved' in tempGameSituation) {
+            gameSituation[x][y].hasMoved = true;
+        }
         //Verify queen promotion (when pawn play)
     if (gameSituation[x][y].typePiece === 'pawn'){
         let queenPromotion = gameSituation[x][y].colorPiece === 'black' ? 0 : 7;
@@ -312,6 +352,7 @@ const saveTempGameSituation = (recover, x, y) => {
     tempGameSituation.havePiece = gameSituation[x][y].havePiece;
     tempGameSituation.colorPiece = gameSituation[x][y].colorPiece;
     tempGameSituation.typePiece = gameSituation[x][y].typePiece;
+    if('hasMoved' in gameSituation[x][y]) tempGameSituation.hasMoved = gameSituation[x][y].hasMoved;
 }
 
 //Return the gameSituation and kingFields to the beginning with save datas
@@ -320,11 +361,12 @@ const goBackOnePlay = () => {
     kingFields = [...kingFieldsSaveData];
     initGameSituation();
 
-    for (let m = 0; m < 8; m++){
-        for (let n = 0; n < 8; n++) {
-            gameSituation[m][n].havePiece = gameSituationSaveData[m][n].havePiece;
-            gameSituation[m][n].colorPiece = gameSituationSaveData[m][n].colorPiece;
-            gameSituation[m][n].typePiece = gameSituationSaveData[m][n].typePiece;
+    for (let x = 0; x < 8; x++){
+        for (let y = 0; y < 8; y++) {
+            gameSituation[x][y].havePiece = gameSituationSaveData[x][y].havePiece;
+            gameSituation[x][y].colorPiece = gameSituationSaveData[x][y].colorPiece;
+            gameSituation[x][y].typePiece = gameSituationSaveData[x][y].typePiece;
+            if('hasMoved' in gameSituationSaveData[x][y]) gameSituation[x][y].hasMoved = gameSituationSaveData[x][y].hasMoved;
         }
     }
 }
@@ -346,6 +388,7 @@ const verifyPlayCheck = (x, y, i, j) => {
             gameSituationSaveData[m][n].havePiece = gameSituation[m][n].havePiece;
             gameSituationSaveData[m][n].colorPiece = gameSituation[m][n].colorPiece;
             gameSituationSaveData[m][n].typePiece = gameSituation[m][n].typePiece;
+            if('hasMoved' in gameSituation[x][y]) gameSituationSaveData[x][y].hasMoved = gameSituation[x][y].hasMoved;
         }
     }
     //Same thing with kingFieldsSaveData
@@ -366,6 +409,56 @@ const resetKingFields = () => {
             kingFields[i][j] = false;
         }
     }
+}
+
+//Castle from left
+const leftCastle = (x) => {
+    //Looking for a piece where it can't be
+    if (gameSituation[x][1].havePiece || gameSituation[x][2].havePiece || gameSituation[x][3].havePiece) return;
+    if (!gameSituation[x][0].havePiece) return;
+    if (gameSituation[x][0].typePiece !== 'rook') return;
+    if (gameSituation[x][0].hasMoved) return;
+
+    //King checks
+    if (!gameSituation[x][4].havePiece) return;
+    if (gameSituation[x][4].typePiece !== 'king') return;
+    if (gameSituation[x][4].hasMoved) return;
+
+    //Check checks
+    if (kingFields[x][4] || kingFields[x][3] || kingFields[x][2]) return;
+
+    console.log(x, 2);
+    squareDrop(x, 2, true);
+}
+
+/* ----------------------------------------------CASTLE FUNCTIONS!--------------------------------------------------------- */
+
+//Castle from right
+const rightCastle = (x) => {
+    //CLooking for a piece where it can't be
+    if (gameSituation[x][5].havePiece || gameSituation[x][6].havePiece) return;
+    if (!gameSituation[x][7].havePiece) return;
+    if (gameSituation[x][7].typePiece !== 'rook') return;
+    if (gameSituation[x][7].hasMoved) return;
+
+    
+    //King checks
+    if (!gameSituation[x][4].havePiece) return;
+    if (gameSituation[x][4].typePiece !== 'king') return;
+    if (gameSituation[x][4].hasMoved) return;
+    
+    //Check checks
+    if (kingFields[x][4] || kingFields[x][5] || kingFields[x][6]) return;
+
+    squareDrop(x, 6, true);
+}
+
+//Castling check
+const verifyCastling = () => {
+    let x = isPlayerOne ? 7 : 0;
+
+    leftCastle(x);
+    rightCastle(x);
 }
 
 /* ----------------------------------------------PIECES MOVEMENT FUNCTIONS!------------------------------------------------ */
@@ -714,6 +807,8 @@ const kingMove = (x, y, kingField) => {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
     }
+
+    if (!kingField) verifyCastling();
 
     for(let i = x - 1; i <= x + 1; i++){
         for(let j = y - 1; j <= y + 1; j++){
