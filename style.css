@@ -29,14 +29,13 @@ body {
 
 .square {
     box-sizing: border-box;
-    border: 1px solid black;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .white-table {
-    background-color: white;
+    background-color: rgb(255, 252, 255);
 }
 
 .black-table {
@@ -53,9 +52,15 @@ body {
 }
 
 .spotlight {
-    background-color: blue;
+    background: rgb(244,244,244);
+    background: linear-gradient(rgba(193, 213, 218, 0.93), rgba(255, 255, 255, 0.9));
+    z-index: 99;
 }
 
+.border-view {
+    border: solid rgba(0, 0, 0, 0.6);
+    border-width: 1px;
+}
 
 img {
     height: 65px;

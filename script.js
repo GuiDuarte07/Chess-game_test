@@ -41,6 +41,41 @@ let wasRookOrKing = false;
 //Variável com todas os quadrados da mesa
 const allSquares = gameTable_section.childNodes;
 
+//MOVER MAIS TARDE
+const deepClone = obj => {
+	// Se não for array ou objeto, retorna null
+	if (typeof obj !== 'object' || obj === null) {
+		return obj;
+	}
+
+	let cloned, i;
+
+	// Handle: Date
+	if (obj instanceof Date) {
+		cloned = new Date(obj.getTime());
+		return cloned;
+	}
+
+	// Handle: array
+	if (obj instanceof Array) {
+		let l;
+		cloned = [];
+		for (i = 0, l = obj.length; i < l; i++) {
+			cloned[i] = deepClone(obj[i]);
+		}
+
+		return cloned;
+	}
+
+	// Handle: object
+	cloned = {};
+	for (i in obj) if (obj.hasOwnProperty(i)) {
+		cloned[i] = deepClone(obj[i]);
+	}
+
+	return cloned;
+}
+
 /* -----------------------------------------------------TABLE FEATURES----------------------------------------------------- */
 //Start game matrix
 const initGameSituation = () => {
@@ -108,51 +143,51 @@ const createTableSquare = () => {
 
 //Create the board pieces
 const insertTablePieces = () => {
-    /*---------------------------------------------Creating the black pieces!-----------------------------------------------*/
-    //creating black pawns
-    for(let i = 0; i < 8; i++){
-        insertImagePiece (1, i, 'pawn', 'white', 'plt');
-    }
-    //creating black towers
-    insertImagePiece (0, 0, 'rook', 'white', 'rlt');
-    insertImagePiece (0, 7, 'rook', 'white', 'rlt');
-
-    //Creating black knights
-    insertImagePiece (0, 1, 'knight', 'white', 'nlt');
-    insertImagePiece (0, 6, 'knight', 'white', 'nlt');
-
-    //Creating black bishops
-    insertImagePiece (0, 2, 'bishop', 'white', 'blt');
-    insertImagePiece (0, 5, 'bishop', 'white', 'blt');
-
-    //Creating black queen
-    insertImagePiece (0, 3, 'queen', 'white', 'qlt');
-
-    //Creating black king
-    insertImagePiece (0, 4, 'king', 'white', 'klt');
-    
     /*---------------------------------------------Creating the white pieces!-----------------------------------------------*/
-    //creating white towers
+    //creating white pawns
     for(let i = 0; i < 8; i++){
-        insertImagePiece (6, i, 'pawn', 'black', 'pdt');
+        insertImagePiece (1, i, 'pawn', 'black', 'pdt');
     }
     //creating white towers
-    insertImagePiece (7, 0, 'rook', 'black', 'rdt');
-    insertImagePiece (7, 7, 'rook', 'black', 'rdt');
+    insertImagePiece (0, 0, 'rook', 'black', 'rdt');
+    insertImagePiece (0, 7, 'rook', 'black', 'rdt');
 
     //Creating white knights
-    insertImagePiece (7, 1, 'knight', 'black', 'ndt');
-    insertImagePiece (7, 6, 'knight', 'black', 'ndt');
+    insertImagePiece (0, 1, 'knight', 'black', 'ndt');  
+    insertImagePiece (0, 6, 'knight', 'black', 'ndt');
 
-    ///Creating white bishops
-    insertImagePiece (7, 2, 'bishop', 'black', 'bdt');
-    insertImagePiece (7, 5, 'bishop', 'black', 'bdt');
+    //Creating white bishops
+    insertImagePiece (0, 2, 'bishop', 'black', 'bdt');
+    insertImagePiece (0, 5, 'bishop', 'black', 'bdt');
 
     //Creating white queen
-    insertImagePiece (7, 3, 'queen', 'black', 'qdt');
+    insertImagePiece (0, 3, 'queen', 'black', 'qdt');
 
     //Creating white king
-    insertImagePiece (7, 4, 'king', 'black', 'kdt');
+    insertImagePiece (0, 4, 'king', 'black', 'kdt');
+    
+    /*---------------------------------------------Creating the black pieces!-----------------------------------------------*/
+    //creating black towers
+    for(let i = 0; i < 8; i++){
+        insertImagePiece (6, i, 'pawn', 'white', 'plt');
+    }
+    //creating black towers
+    insertImagePiece (7, 0, 'rook', 'white', 'rlt');
+    insertImagePiece (7, 7, 'rook', 'white', 'rlt');
+
+    //Creating black knights
+    insertImagePiece (7, 1, 'knight', 'white', 'nlt');
+    insertImagePiece (7, 6, 'knight', 'white', 'nlt');
+
+    ///Creating black bishops
+    insertImagePiece (7, 2, 'bishop', 'white', 'blt');
+    insertImagePiece (7, 5, 'bishop', 'white', 'blt');
+
+    //Creating black queen
+    insertImagePiece (7, 3, 'queen', 'white', 'qlt');
+
+    //Creating black king
+    insertImagePiece (7, 4, 'king', 'white', 'klt');
 }
 
 //Insert image and info that a certain piece type
@@ -191,8 +226,12 @@ const setDragStart = (event) => {
     
     let x = idValue[0], y = idValue[1];
     
-    if(gameSituation[x][y].colorPiece !== (isPlayerOne ? 'black' : 'white')) return;
+    if(gameSituation[x][y].colorPiece !== (isPlayerOne ? 'white' : 'black')) return;
     
+    /* allSquares.forEach(square => {
+        square.classList.add('border-view');
+    });
+ */
     saveTempGameSituation(false, x, y);
     executFunction[gameSituation[x][y].typePiece](x, y, false);
 
@@ -203,9 +242,10 @@ const setDragStart = (event) => {
 //Function for drag end, will check if was all okay
 const setDragEnd = () => {
     removeSquareDrop();
-    if (isGameOver) setTimeout(() => alert(`${isPlayerOne ? "white" : "black"} wins!`),0);
+    if (isGameOver) setTimeout(() => alert(`${isPlayerOne ? "black" : "white"} wins!`),0);
 
     if (isPawnPromotion) {
+        console.log('pq disso???')
         isPawnPromotion = false;
         return;
     }
@@ -248,6 +288,7 @@ const setDragOver = (event) => {
 //When drag end, remove drag funtionality from all pieces
 const removeSquareDrop = () => {
     allSquares.forEach(square => {
+        /* square.classList.remove('border-view'); */
         if(square.classList.contains('spotlight')){
             square.classList.remove('spotlight');
             square.removeAttribute('ondrop');
@@ -272,7 +313,11 @@ const squareDrop = (x, y, castle) => {
 //Aply pawn promotion to queen
 const changeImgToQueen = (x, y, color) => {
     gameSituation[x][y].typePiece = 'queen';
-    const svgName = (color === 'white') ? 'qlt' : 'qdt';
+    console.trace()
+    console.log('salveee!!!')
+    if (checkPlay) return;
+
+    const svgName = (color === 'black') ? 'qdt' : 'qlt';
     const pawnPiece = document.getElementById(`${x}-${y}`);
 
     const piece_img = document.createElement('img');
@@ -328,6 +373,7 @@ const getId = (squareEl) => {
 //get the new position of a piece saved in tempGameSituation or save this piece in it
 const saveTempGameSituation = (recover, x, y) => {
     if (recover) {
+        console.log(gameSituation[x][y], x, y)
         gameSituation[x][y].havePiece = tempGameSituation.havePiece;
         gameSituation[x][y].colorPiece = tempGameSituation.colorPiece;
         gameSituation[x][y].typePiece = tempGameSituation.typePiece;
@@ -336,15 +382,15 @@ const saveTempGameSituation = (recover, x, y) => {
             gameSituation[x][y].hasMoved = true;
         }
         //Verify queen promotion (when pawn play)
-        console.log(gameSituation)
-        console.log(x, y)
-    if (gameSituation[x][y].typePiece === 'pawn'){
-        let queenPromotion = gameSituation[x][y].colorPiece === 'black' ? 0 : 7;
-        if (x === queenPromotion){/* !check &&  */
-            changeImgToQueen(x, y, gameSituation[x][y].colorPiece);
-            isPawnPromotion = true;
+        if (gameSituation[x][y].typePiece === 'pawn'){
+            let queenPromotion = gameSituation[x][y].colorPiece === 'white' ? 0 : 7;
+            if (x === queenPromotion){/* !check &&  */
+                console.log(tempGameSituation)
+                console.log(queenPromotion)
+                changeImgToQueen(x, y, gameSituation[x][y].colorPiece);
+                isPawnPromotion = true;
+            }
         }
-    }
         return;
     }
 
@@ -362,17 +408,18 @@ const saveTempGameSituation = (recover, x, y) => {
 //Return the gameSituation and kingFields to the beginning with save datas
 const goBackOnePlay = () => {
     checkPlay = false;
-    kingFields = [...kingFieldsSaveData];
+    kingFields = deepClone(kingFieldsSaveData);
     initGameSituation();
 
-    for (let x = 0; x < 8; x++){
+    gameSituation = deepClone(gameSituationSaveData);
+    /* for (let x = 0; x < 8; x++){
         for (let y = 0; y < 8; y++) {
             gameSituation[x][y].havePiece = gameSituationSaveData[x][y].havePiece;
             gameSituation[x][y].colorPiece = gameSituationSaveData[x][y].colorPiece;
             gameSituation[x][y].typePiece = gameSituationSaveData[x][y].typePiece;
             if('hasMoved' in gameSituationSaveData[x][y]) gameSituation[x][y].hasMoved = gameSituationSaveData[x][y].hasMoved;
         }
-    }
+    } */
 }
 
 //Responsible for checking whether a move will remove the king's check
@@ -381,22 +428,11 @@ const verifyPlayCheck = (x, y, i, j) => {
     //gameSituationSaveData store the gameSituation matrix before play in analysis
     gameSituationSaveData = [];
 
-    for (let m = 0; m < 8; m++){
-        gameSituationSaveData[m] = []
-        for (let n = 0; n < 8; n++) {
-            gameSituationSaveData[m][n] = {
-                havePiece: false,
-                colorPiece: undefined,
-                typePiece: undefined,
-            }
-            gameSituationSaveData[m][n].havePiece = gameSituation[m][n].havePiece;
-            gameSituationSaveData[m][n].colorPiece = gameSituation[m][n].colorPiece;
-            gameSituationSaveData[m][n].typePiece = gameSituation[m][n].typePiece;
-            if('hasMoved' in gameSituation[m][n]) gameSituationSaveData[m][n].hasMoved = gameSituation[m][n].hasMoved;
-        }
-    }
+    gameSituationSaveData = deepClone(gameSituation);
     //Same thing with kingFieldsSaveData
-    kingFieldsSaveData = [...kingFields];
+    kingFieldsSaveData = deepClone(kingFields);
+    console.log(document.getElementById(`${x}-${y}`))
+    console.log(document.getElementById(`${i}-${j}`))
     changeGameSituation(document.getElementById(`${x}-${y}`), document.getElementById(`${i}-${j}`));
     //This will make the new matrix that will reveal whether it was sucessful or not
     verifyKingFields();
@@ -410,7 +446,10 @@ const resetKingFields = () => {
     for (let i = 0; i < 8; i++){
         kingFields[i] = []
         for (let j = 0; j < 8; j++){
-            kingFields[i][j] = false;
+            kingFields[i][j] = {
+                isCheck : false,
+                pieces : []
+            };
         }
     }
 }
@@ -429,7 +468,7 @@ const leftCastle = (x) => {
     if (gameSituation[x][4].hasMoved) return;
 
     //Check checks
-    if (kingFields[x][4] || kingFields[x][3] || kingFields[x][2]) return;
+    if (kingFields[x][4].isCheck || kingFields[x][3].isCheck || kingFields[x][2].isCheck) return;
 
     squareDrop(x, 2, true);
 }
@@ -451,7 +490,7 @@ const rightCastle = (x) => {
     if (gameSituation[x][4].hasMoved) return;
     
     //Check checks
-    if (kingFields[x][4] || kingFields[x][5] || kingFields[x][6]) return;
+    if (kingFields[x][4].isCheck || kingFields[x][5].isCheck || kingFields[x][6].isCheck) return;
 
     squareDrop(x, 6, true);
 }
@@ -487,7 +526,13 @@ const pawnMove = (x, y, kingField) => {
             continue;
         }
         if(kingField){
-            kingFields[x + op][j] = true;
+            kingFields[x + op][j].isCheck = true;
+            kingFields[x + op][j].pieces.push({
+                typePiece: gameSituation[x][y].typePiece,
+                colorPiece: gameSituation[x][y].colorPiece,
+                x: x,
+                y: y
+            });
             j++;
             continue;
         }
@@ -569,11 +614,11 @@ const bishopMove = (x, y, kingField) => {
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
     if(kingField){
-        allyPiece = isPlayerOne ? 'white' : 'black';
-        enemyPiece = isPlayerOne ? 'black' : 'white';
-    } else {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
+    } else {
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
     }
 
     while(continueWhile){
@@ -586,15 +631,27 @@ const bishopMove = (x, y, kingField) => {
                 if (i < 0 || i > 7) continue;
                 if (j < 0 || j > 7)continue;
 
-                if (gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
+                if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
                     continueSide[localeSpot%4] = false;
-                    if (kingField) kingFields[i][j]= true;
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    }
                     continue;
-                }else if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
-                    continueSide[localeSpot%4] = false;
+                }
+                if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
+                    if (kingField && gameSituation[i][j].typePiece === 'king'){
+                        continueSide[localeSpot%4] = true;
+                    } else continueSide[localeSpot%4] = false;
 
                     if (!kingField && forceKingMovie && !checkPlay) {
                         //Verify if put this piece in this position will resolve check situation
+                        saveTempGameSituation(false, x, y);
                         verifyPlayCheck(x, y, i, j);
         
                         if (!forceKingMovie) {
@@ -610,17 +667,21 @@ const bishopMove = (x, y, kingField) => {
                         continue;
                     }
 
-                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
-                    if (kingField && gameSituation[i][j].typePiece === 'king'){
-                        continueSide[localeSpot%8] = true;
-                    } else {
-                        continueSide[localeSpot%8] = false;
-                    }
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    } else squareDrop(i, j);
                 }
 
                 if (continueSide[localeSpot%4]) {
                     if (!kingField && forceKingMovie && !checkPlay) {
                         //Verify if put this piece in this position will resolve check situation
+                        saveTempGameSituation(false, x, y);
                         verifyPlayCheck(x, y, i, j);
         
                         if (!forceKingMovie) {
@@ -636,7 +697,15 @@ const bishopMove = (x, y, kingField) => {
                         continue;
                     }
 
-                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    } else squareDrop(i, j);
                 }
             }
         }
@@ -653,11 +722,11 @@ const rookMove = (x, y, kingField) => {
     for (let i = 0; i < 4; i++) continueSide[i] = true;
 
     if(kingField){
-        allyPiece = isPlayerOne ? 'white' : 'black';
-        enemyPiece = isPlayerOne ? 'black' : 'white';
-    } else {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
+    } else {
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
     }
 
     while(continueWhile){
@@ -673,17 +742,25 @@ const rookMove = (x, y, kingField) => {
                 
                 if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
                     continueSide[localeSpot%4] = false;
-                    if (kingField) kingFields[i][j]= true;
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    }
                     continue;
                 }else if (continueSide[localeSpot%4] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
-                    continueSide[localeSpot%4] = false;
                     if (kingField && gameSituation[i][j].typePiece === 'king'){
-                        continueSide[localeSpot%8] = true;
+                        continueSide[localeSpot%4] = true;
                     } else {
-                        continueSide[localeSpot%8] = false;
+                        continueSide[localeSpot%4] = false;
                     }
                     if (!kingField && forceKingMovie && !checkPlay) {
                         //Verify if put this piece in this position will resolve check situation
+                        saveTempGameSituation(false, x, y);
                         verifyPlayCheck(x, y, i, j);
         
                         if (!forceKingMovie) {
@@ -698,12 +775,21 @@ const rookMove = (x, y, kingField) => {
                         goBackOnePlay();
                         continue;
                     }
-                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    } else squareDrop(i, j);
                 }
                 
                 if (continueSide[localeSpot%4]) {
                     if (!kingField && forceKingMovie && !checkPlay) {
                         //Verify if put this piece in this position will resolve check situation
+                        saveTempGameSituation(false, x, y);
                         verifyPlayCheck(x, y, i, j);
         
                         if (!forceKingMovie) {
@@ -719,7 +805,15 @@ const rookMove = (x, y, kingField) => {
                         continue;
                     }
 
-                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    } else squareDrop(i, j);
                 }
             }
         }
@@ -736,11 +830,11 @@ const queenMove = (x, y, kingField) => {
     for (let i = 0; i < 8; i++) continueSide[i] = true;
 
     if(kingField){
-        allyPiece = isPlayerOne ? 'white' : 'black';
-        enemyPiece = isPlayerOne ? 'black' : 'white';
-    } else {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
+    } else {
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
     }
     while(continueWhile){
         for(let i = x - dist; i <= x + dist; i++){ 
@@ -754,7 +848,15 @@ const queenMove = (x, y, kingField) => {
                 
                 if (continueSide[localeSpot%8] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === allyPiece){
                     continueSide[localeSpot%8] = false;
-                    if (kingField) kingFields[i][j]= true;
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    }
                     continue;
                 }else if (continueSide[localeSpot%8] && gameSituation[i][j].havePiece && gameSituation[i][j].colorPiece === enemyPiece){
                     if (kingField && gameSituation[i][j].typePiece === 'king'){
@@ -765,6 +867,7 @@ const queenMove = (x, y, kingField) => {
 
                     if (!kingField && forceKingMovie && !checkPlay) {
                         //Verify if put this piece in this position will resolve check situation
+                        saveTempGameSituation(false, x, y);
                         verifyPlayCheck(x, y, i, j);
         
                         if (!forceKingMovie) {
@@ -780,12 +883,21 @@ const queenMove = (x, y, kingField) => {
                         continue;
                     }
 
-                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    } else squareDrop(i, j);
                 }
 
                 if (continueSide[localeSpot%8]) {
                     if (!kingField && forceKingMovie && !checkPlay) {
                         //Verify if put this piece in this position will resolve check situation
+                        saveTempGameSituation(false, x, y);
                         verifyPlayCheck(x, y, i, j);
                         if (!forceKingMovie) {
                             forceKingMovie = true;
@@ -799,7 +911,15 @@ const queenMove = (x, y, kingField) => {
                         goBackOnePlay();
                         continue;
                     }
-                    if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+                    if (kingField) {
+                        kingFields[i][j].isCheck = true;
+                        kingFields[i][j].pieces.push({
+                            typePiece: gameSituation[x][y].typePiece,
+                            colorPiece: gameSituation[x][y].colorPiece,
+                            x: x,
+                            y: y
+                        });
+                    } else squareDrop(i, j);
                 }
             }
         }
@@ -814,9 +934,9 @@ const knightMove = (x, y, kingField) => {
     let allyPiece;
 
     if(kingField){
-        allyPiece = isPlayerOne ? 'white' : 'black';
-    } else {
         allyPiece = isPlayerOne ? 'black' : 'white';
+    } else {
+        allyPiece = isPlayerOne ? 'white' : 'black';
     }
 
     for (let i = x - 2; i <= x + 2; i++){
@@ -834,6 +954,7 @@ const knightMove = (x, y, kingField) => {
 
             if (!kingField && forceKingMovie && !checkPlay) {
                 //Verify if put this piece in this position will resolve check situation
+                saveTempGameSituation(false, x, y);
                 verifyPlayCheck(x, y, i, j);
 
                 if (!forceKingMovie) {
@@ -849,7 +970,15 @@ const knightMove = (x, y, kingField) => {
                 continue;
             }
 
-            if (kingField) kingFields[i][j]= true; else squareDrop(i, j);
+            if (kingField) {
+                kingFields[i][j].isCheck = true;
+                kingFields[i][j].pieces.push({
+                    typePiece: gameSituation[x][y].typePiece,
+                    colorPiece: gameSituation[x][y].colorPiece,
+                    x: x,
+                    y: y
+                });
+            } else squareDrop(i, j);
         }
     }
 }
@@ -859,11 +988,11 @@ const kingMove = (x, y, kingField) => {
     let allyPiece;
 
     if(kingField){
-        allyPiece = isPlayerOne ? 'white' : 'black';
-        enemyPiece = isPlayerOne ? 'black' : 'white';
-    } else {
         allyPiece = isPlayerOne ? 'black' : 'white';
         enemyPiece = isPlayerOne ? 'white' : 'black';
+    } else {
+        allyPiece = isPlayerOne ? 'white' : 'black';
+        enemyPiece = isPlayerOne ? 'black' : 'white';
     }
 
     if (!kingField) verifyCastling();
@@ -875,9 +1004,18 @@ const kingMove = (x, y, kingField) => {
             if (j < 0 || j > 7)continue;
 
             if (gameSituation[i][j].colorPiece === allyPiece) continue;
-            if (kingField) kingFields[i][j] = true; else {
+            if (kingField) {
+                kingFields[i][j].isCheck = true;
+                kingFields[i][j].pieces.push({
+                    typePiece: gameSituation[x][y].typePiece,
+                    colorPiece: gameSituation[x][y].colorPiece,
+                    x: x,
+                    y: y
+                });
+            } else {
                 if (!kingField && forceKingMovie && !checkPlay) {
                     //Verify if put this piece in this position will resolve check situation
+                    saveTempGameSituation(false, x, y);
                     verifyPlayCheck(x, y, i, j);
     
                     if (!forceKingMovie) {
@@ -892,7 +1030,7 @@ const kingMove = (x, y, kingField) => {
                     goBackOnePlay();
                     continue;
                 }
-                if (kingFields[i][j]) continue; else squareDrop(i, j);
+                if (kingFields[i][j].isCheck) continue; else squareDrop(i, j);
             } 
         }
     }
@@ -900,6 +1038,8 @@ const kingMove = (x, y, kingField) => {
 
 
 /* --------------------------------VERIFY CHECKMATE AND POSSIBLES KING MOVE---------------------------------------------- */
+
+//Check and CheckMate
 const verifyCheckMate = (x, y) => {
     for(let i = x - 1; i <= x + 1; i++){
         for(let j = y - 1; j <= y + 1; j++){
@@ -907,7 +1047,7 @@ const verifyCheckMate = (x, y) => {
             if (i < 0 || i > 7) continue;
             if (j < 0 || j > 7)continue;
 
-            if (!gameSituation[i][j].havePiece && !kingFields[i][j]) {
+            if (!gameSituation[i][j].havePiece && !kingFields[i][j].isCheck) {
                 console.log('is not checkmate!');
                 return;
             }
@@ -940,7 +1080,7 @@ const verifyCheckMate = (x, y) => {
 
 //This function will populate the kingFields matrix with info about which position the king cannot enter
 const verifyKingFields = () => {
-    let enemyTurnColor = isPlayerOne ? 'white' : 'black';
+    let enemyTurnColor = isPlayerOne ? 'black' : 'white';
     resetKingFields();
 
     let x, y;
@@ -956,7 +1096,7 @@ const verifyKingFields = () => {
         }
     }
 
-    if (kingFields[x][y]) {
+    if (kingFields[x][y].isCheck) {
         forceKingMovie = true;
         verifyCheckMate(x, y);
     }
@@ -977,3 +1117,5 @@ createTableSquare();
 */
 
 //ALGUM BUG COM A TORRE FEZ O GAMESITUATION TROCAR A PEÇA DO REI PELA PEÇA DA TORRE FAZENDO O REI SE COMPORTAR COMO REI
+//PORQUE AS PEÇAS ESTÃO SE TRANSFORMANDO EM PEÕES???
+//ver tempGameSituation !!!
