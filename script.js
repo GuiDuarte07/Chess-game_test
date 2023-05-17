@@ -1115,7 +1115,3 @@ createTableSquare();
     knight: cavalo
     pawn: peão ---> pode pular até 2 casas na primeira vez e só come peças pela lateral
 */
-
-//ALGUM BUG COM A TORRE FEZ O GAMESITUATION TROCAR A PEÇA DO REI PELA PEÇA DA TORRE FAZENDO O REI SE COMPORTAR COMO REI
-//PORQUE AS PEÇAS ESTÃO SE TRANSFORMANDO EM PEÕES???
-//ver tempGameSituation !!!
