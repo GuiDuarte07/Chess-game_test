@@ -4,6 +4,8 @@
 
 Projeto antigo, mas ainda interessante, foi usado bastante estruturas de repetições e lógica para movimentação das peças.
 
+Acesse em: https://guiduarte07.github.io/Chess-game_test/
+
 
 
 ![Image](https://github.com/GuiDuarte07/Chess-game_test/assets/78491545/8c30e47b-b0a9-49cf-83fd-22287fd0d673)
